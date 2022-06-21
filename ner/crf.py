@@ -1,11 +1,15 @@
 import re
 import joblib
-from nltk.tokenize import word_tokenize,MWETokenizer
+import nltk
+from nltk.tokenize import word_tokenize, MWETokenizer0
 
-#load model
+nltk.download('punkt')
+# load model
 crf = joblib.load('crf_ner_model.pkl')
 
-#features for all words
+# features for all words
+
+
 def word2features(sent, i):
     word = sent[i][0]
 
@@ -14,9 +18,10 @@ def word2features(sent, i):
         'word.lower()': word.lower(),
         'word[-3:]': word[-3:],
         'word[-2:]': word[-2:],
-        'word.isupper()': word.isupper(),## is_first_capital
-        'word.istitle()': word.istitle(),## Check if each word start with an upper case letter
-        'word.isdigit()': word.isdigit(),## is_numeric
+        'word.isupper()': word.isupper(),  # is_first_capital
+        # Check if each word start with an upper case letter
+        'word.istitle()': word.istitle(),
+        'word.isdigit()': word.isdigit(),  # is_numeric
         'word.position()': str(i),
     }
     # Features for words that are not at the beginning of a document
@@ -47,30 +52,37 @@ def word2features(sent, i):
     return features
 
 # functions for extracting features in documents
+
+
 def extract_features(doc):
     return [word2features(doc, i) for i in range(len(doc))]
 
 # A function fo generating the list of labels for each document
+
+
 def get_labels(doc):
     return [label for (token, postag, label) in doc]
 
+
 def number_rule(number):
-    if re.search(r'(?:(\d+\/\d+)|(\d+\/\d+\/\d+))',number):
+    if re.search(r'(?:(\d+\/\d+)|(\d+\/\d+\/\d+))', number):
         return True
     else:
         return False
 
+
 def have_number(text):
     if len(text) - len(re.sub('\d+', '', text)) > 0:
-        return True 
+        return True
     return False
+
 
 def get_map_entity(pred):
     project = []
     number = []
-    alley =[]
+    alley = []
     lane = []
-    hamlet=[]
+    hamlet = []
     to = []
     street = []
     ward = []
@@ -87,7 +99,8 @@ def get_map_entity(pred):
         for i in range(len(pred)):
             if pred[i][1].endswith("PRO"):
                 project.append(pred[i][0].lower())
-            if pred[i][1].endswith("NUMBER") and have_number(pred[i][0]): ## được xác định là number & chứa kí tự số
+            # được xác định là number & chứa kí tự số
+            if pred[i][1].endswith("NUMBER") and have_number(pred[i][0]):
                 number.append(pred[i][0].lower())
             if pred[i][1].endswith("ALLEY"):
                 alley.append(pred[i][0].lower())
@@ -105,7 +118,7 @@ def get_map_entity(pred):
                 dist.append(pred[i][0].lower())
             if pred[i][1].endswith("CITY"):
                 city.append(pred[i][0].lower())
-        
+
         map["project"] = " ".join(project)
         map["number"] = " ".join(number)
         map["alley"] = " ".join(alley)
@@ -122,21 +135,26 @@ def get_map_entity(pred):
         print("end -------------")
     return map
 
+
 word_tokenizer = MWETokenizer(separator='')
+
+
 def prepare_text(text):
-    text = word_tokenizer.tokenize(word_tokenize(text)) 
+    text = word_tokenizer.tokenize(word_tokenize(text))
     return ' '.join(text)
-    
+
+
 def extract_entity(address):
     temp = []
     for i in address.split(" "):
         if "," not in i and "." not in i:
             temp.append(i)
-        if "," in i :
+        if "," in i:
             temp.append(",")
-        if "." in i :
+        if "." in i:
             temp.append(".")
     return temp
+
 
 def detect_entity(address):
     text = prepare_text(address)
@@ -150,7 +168,7 @@ def detect_entity(address):
     arr = []
     arr.append(detect)
     X_detect = [extract_features(s) for s in arr]
-    #open model
+    # open model
     y_detect = crf.predict(X_detect)
     pred = []
     for i in range(len(temp)):
@@ -161,6 +179,7 @@ def detect_entity(address):
         kv.append(v)
         pred.append(tuple(kv))
     return get_map_entity(pred)
+
 
 if __name__ == "__main__":
     address = "Số Nhà 29a,Ngách 12, ấp Tam Trinh   Ngõ 136 Đường Tam Trinh,Tổ 16"
